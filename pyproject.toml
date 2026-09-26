@@ -1,0 +1,27 @@
+[project]
+name = "minicrm"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "dev", email = "asqarservis00001@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "alembic>=1.20.0",
+    "black>=26.5.1",
+    "dotenv>=0.9.9",
+    "fastapi>=0.141.1",
+    "sqlalchemy>=2.1.1",
+    "starlette>=1.7.0",
+    "starlette-admin>=1.0.1",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+minicrm = "minicrm:main"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
