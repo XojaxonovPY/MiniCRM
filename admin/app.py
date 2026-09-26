@@ -11,9 +11,10 @@ from db import engine
 from db.models import User, Admin as AdminModel
 
 admin = Admin(engine,
-              title='Fast API Admin',
+              title='Mini CRM Admin',
               base_url='/admin/',
               auth_provider=UsernameAndPasswordProvider(),
+              secret_key="sdgfhjhhsfdghn",
               middlewares=[Middleware(SessionMiddleware, secret_key="sdgfhjhhsfdghn")]
               )
 
@@ -27,12 +28,8 @@ class AdminModelView(ModelView):
             obj.password = bcrypt.hashpw(password, bcrypt.gensalt()).decode('utf-8')
 
 
-class UserModelView(ModelView):
-    fields = [User.id, User.username]
-
-
-user_model = UserModelView(User)
+# user_model = UserModelView(User)
 admin_model = AdminModelView(AdminModel)
 
 admin.add_view(admin_model)
-admin.add_view(user_model)
+# admin.add_view(user_model)

@@ -111,28 +111,26 @@ class Manager:
     @staticmethod
     def _handle_db_error(e: Exception):
         if isinstance(e, IntegrityError):
-            sqlstate = getattr(e.orig, "sqlstate", None)
+            error_msg = str(e.orig).lower() if getattr(e, "orig", None) else ""
 
-            if sqlstate == "23505":
+            if "unique constraint" in error_msg or "duplicate" in error_msg:
+                logger.error(e)
                 raise DatabaseException(
-                    message="Bu foydalanuvchi nomi (username) allaqachon band. Iltimos, boshqa nom kiriting.",
+                    message="Bu ma'lumot (username, email yoki telefon) allaqachon band. Iltimos, boshqa qiymat kiriting.",
                     code=409,
-                    original_error=e
                 )
-
-            elif sqlstate == "23503":
+            elif "foreign key" in error_msg:
+                logger.error(e)
                 raise DatabaseException(
                     message="Bog'langan ma'lumot topilmadi yoki xato ID yuborildi.",
                     code=409,
-                    original_error=e
                 )
 
+            logger.error(e)
             raise DatabaseException(
                 message="Ma'lumotlar yaxlitligi buzildi (Tizim xatosi).",
                 code=409,
-                original_error=e
             )
-
         if isinstance(e, DataError):
             logger.warning(f"Database Data Warning: {e}")
             raise DatabaseException(f"Ma'lumot formatida xato: {str(e.orig)}", 400, e)
