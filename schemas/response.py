@@ -11,5 +11,6 @@ class TokenResponseSchema(BaseModel):
 
 class UserResponseSchema(BaseModel):
     id: Optional[int]
-    first_name: Optional[str]
-    username: Optional[str]
+    full_name: Optional[str]
+    email: Optional[str]
+    phone_number: Optional[str]

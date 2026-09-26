@@ -1,6 +1,7 @@
 from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, HTTPException, status, Body
+from sqlalchemy import select, or_
 from starlette.responses import JSONResponse
 
 from apps.depends import SessionDep, UserSession
@@ -34,7 +35,9 @@ async def user_create(session: SessionDep, user: RegisterSchema):
 # ==========================================
 @router.post("/login", response_model=TokenResponseSchema)
 async def login(session: SessionDep, data: LoginSchema) -> JSONResponse:
-    user = await User.get(session, username=data.username)
+    stmt = select(User).where(or_(User.email == data.email, User.phone_number == data.phone_number))
+    result = await User.get_query(session, stmt)
+    user = result.scalar_one_or_none()
     if not user or not await verify_password(data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -92,7 +92,7 @@ async def get_current_user(session: AsyncSession = Depends(get_session), token: 
     if not payload or payload.get("type") != "access":
         raise credentials_exception
 
-    subject = payload.get("sub")
+    subject: str | None = payload.get("sub")
     if not subject:
         raise credentials_exception
 
