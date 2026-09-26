@@ -21,7 +21,7 @@ class LoginSchema(BaseModel):
 class RegisterSchema(BaseModel):
     full_name: Optional[str] = None
     email: Optional[EmailStr] = None
-    phone_number: Optional[str] = Field(max_length=20, min_length=8)
+    phone_number: Optional[str] = Field(max_length=20, min_length=8, default=None)
     password: str = Field(max_length=10, min_length=3)
 
     @model_validator(mode="after")

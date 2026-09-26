@@ -1,4 +1,4 @@
-from sqlalchemy import String, CHAR, Enum
+from sqlalchemy import String, CHAR, Enum, Boolean
 from sqlalchemy.orm import mapped_column, Mapped
 
 from db.config import Model, Base
@@ -36,6 +36,7 @@ class User(Model):
         Enum(UserStatus, values_callable=values_callable), default=UserStatus.NEW.value, nullable=True
     )
     password: Mapped[str] = mapped_column(String(length=200))
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 metadata = Base.metadata

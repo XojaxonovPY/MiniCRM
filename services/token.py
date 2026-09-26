@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import bcrypt
 import jwt
@@ -49,7 +50,7 @@ async def get_password_hash(password: str) -> str:
 
 def create_token(payload: dict[str, str], expires_delta: timedelta) -> str:
     """Token yaratish uchun markazlashgan xavfsiz funksiya"""
-    to_encode = payload.copy()
+    to_encode: dict[str, Any] = payload.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
