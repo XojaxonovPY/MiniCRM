@@ -16,8 +16,3 @@ class BaseSchema(BaseModel):
             self.phone_number = re.sub(r"\D", "", str(self.phone_number))
         return self
 
-
-class LeadBaseSchema(BaseSchema):
-    name: str
-    note: str
-    source: str

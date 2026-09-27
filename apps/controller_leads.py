@@ -1,10 +1,14 @@
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi_filter import FilterDepends
 from sqlalchemy import select
 
 from apps.depends import SessionDep, UserSession
-from db.models import Lead
-from schemas import LeadResponseSchema, LeadsResponseSchema
+from apps.permissions import PermissionChecker
+from db.models import Lead, History
+from schemas import LeadResponseSchema, LeadsResponseSchema, MessageResponseSchema, LeadRequestSchema, \
+    LeadPatchRequestSchema
 from schemas.filter import LeadFilter
 from schemas.pagination import Pagination
 
@@ -18,6 +22,7 @@ async def get_lead_list(
 ) -> LeadsResponseSchema:
     stmt = select(Lead)
     stmt = filter.filter(stmt)
+    stmt = filter.sort(stmt)
     stmt = (
         stmt.order_by(Lead.id.desc())
         .limit(pagination.limit)
@@ -33,3 +38,22 @@ async def get_one_lead(pk: int, session: SessionDep, user: UserSession) -> Lead 
     if not lead:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     return lead
+
+
+@router.post("/create/lead/", response_model=MessageResponseSchema, dependencies=[Depends(PermissionChecker)])
+async def create_lead(session: SessionDep, user: UserSession, payload: LeadRequestSchema):
+    lead = await Lead.create(session, **payload.model_dump(exclude_unset=True), creator_id=user.id)
+    await History.create(session, user_id=user.id, lead_id=lead.id, detail="Leader is created")
+    await session.commit()
+    return MessageResponseSchema(status="success", message="Lead is created successfully")
+
+
+@router.patch("/update/lead/{pk}/", response_model=MessageResponseSchema, dependencies=[Depends(PermissionChecker)])
+async def update_lead(pk: int, session: SessionDep, user: UserSession, payload: LeadPatchRequestSchema):
+    lead_data: dict[str, Any] = payload.model_dump(exclude_unset=True)
+    lead = await Lead.update(session, filter_={"id": pk}, **lead_data)
+    if not lead:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+    await History.create(session, user_id=user.id, lead_id=lead.id, detail=f"Lead {lead_data.keys()} are updated")
+    await session.commit()
+    return MessageResponseSchema(status="success", message="Lead is updated successfully")

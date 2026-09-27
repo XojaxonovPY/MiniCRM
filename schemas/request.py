@@ -1,4 +1,7 @@
-from schemas.base import LeadBaseSchema, BaseSchema
+from typing import Optional
+
+from db.enum import UserStatus
+from schemas.base import BaseSchema
 
 
 class BaseAuthSchema(BaseSchema):
@@ -13,5 +16,14 @@ class RegisterSchema(BaseAuthSchema):
     full_name: str
 
 
-class LeadRequestSchema(LeadBaseSchema):
-    pass
+class LeadRequestSchema(BaseSchema):
+    name: str
+    note: str
+    source: str
+
+
+class LeadPatchRequestSchema(BaseSchema):
+    name: Optional[str] = None
+    note: Optional[str] = None
+    status: Optional[UserStatus] = None
+    source: Optional[str] = None
