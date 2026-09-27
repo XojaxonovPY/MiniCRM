@@ -1,81 +1,70 @@
-# MiniCRM Loyihasi Tahlili (Yangilangan Versiya)
+# MiniCRM Loyihasi Tahlili va To'liq Tizim Arxitekturasi
 
-Ushbu hujjat **MiniCRM** loyihasining so'nggi kiritilgan o'zgarishlaridan keyingi to'liq tahlili, yangi arxitekturaviy
-tuzilishi, komponentlari, tekshiruv natijalari va aniqlangan muhim masalalarni o'z ichiga oladi.
-
----
-
-## 1. Loyihaning hozirgi holati va muvaffaqiyatli o'zgarishlar
-
-Foydalanuvchi tomonidan kiritilgan oxirgi o'zgarishlar loyiha sifatini sezilarli darajada oshirdi:
-
-1. **`User` va `Lead` modellari to'liq ajratildi**:
-    - Endi `User` tizim foydalanuvchisi (xodim, menejer, admin) hisoblanadi.
-    - `Lead` alohida model sifatida shakllantirildi (`name`, `source`, `phone_number`, `email`, `note`, `status`,
-      `creator_id`, `created_at`, `updated_at`).
-2. **`History` (Audit log) modeli joriy qilindi**:
-    - Har bir lead yaratilganda yoki tahrirlanganda qaysi xodim tomonidan qaysi maydonlar o'zgartirilganligi `History`
-      jadvaliga avtomatik yozilmoqda.
-3. **Validatsiya va Schemalar tozalandi**:
-    - `schemas/base.py` dagi `return ValueError` xatosi tuzatildi (`raise ValueError`).
-    - `LeadRequestSchema`, `LeadPatchRequestSchema`, `HistoryResponseSchema` sxemalari yaratildi.
-4. **Filtrlash va Saralash**:
-    - `LeadFilter` ga `status` (UserStatus) va `sorted_by` qo'shildi.
-5. **Alembic migratsiyalari**:
-    - Yangi jadvallar (`leads`, `histories`) uchun toza migratsiya fayli yaratildi va bazaga muvaffaqiyatli qo'llandi.
+Ushbu hujjat **MiniCRM** loyihasining backend, **React Frontend**, **avtomatlashtirilgan testlar**, **Gunicorn production runner**, **Mock data seeder** hamda **Render.com deployment** sozlamalari haqida to'liq ma'lumot beradi.
 
 ---
 
-## 2. API Endpointlar xaritasi
+## 1. Loyiha umumiy ko'rinishi
 
-| Metod   | Endpoint                           | Vazifasi                                           | Ruxsat / Auth         |               Holati                |
-|:--------|:-----------------------------------|:---------------------------------------------------|:----------------------|:-----------------------------------:|
-| `POST`  | `/auth/user/register`              | Yangi xodim ro'yxatdan o'tkazish                   | Ochiq                 |             Ishlayapti              |
-| `POST`  | `/auth/login`                      | Tizimga kirish (email/telefon + parol)             | Ochiq                 | **Bug bor** (quyida tushuntirilgan) |
-| `POST`  | `/auth/refresh`                    | Yangi JWT token juftligini olish                   | Ochiq                 |             Ishlayapti              |
-| `GET`   | `/auth/users/me`                   | Joriy profil ma'lumotlarini olish                  | Bearer Auth           |             Ishlayapti              |
-| `GET`   | `/controller/lead/list/`           | Lidlar ro'yxati (search, status, sort, pagination) | Bearer Auth           |             Ishlayapti              |
-| `GET`   | `/controller/get/lead/{pk}/`       | Bitta lid ma'lumotini olish                        | Bearer Auth           |             Ishlayapti              |
-| `POST`  | `/controller/create/lead/`         | Yangi lid yaratish                                 | Bearer Auth (+ Admin) |     **Permission ishlamayapti**     |
-| `PATCH` | `/controller/update/lead/{pk}/`    | Lid ma'lumotlari yoki statusini tahrirlash         | Bearer Auth (+ Admin) |     **Permission ishlamayapti**     |
-| `GET`   | `/controller/actions/history/{pk}` | Lid bo'yicha harakatlar tarixi                     | Bearer Auth           |             Ishlayapti              |
+- **Nomi**: MiniCRM
+- **Arxitektura**: Monolit API + Integratsiyalashgan React SPA (Single Page Application)
+- **Backend**: FastAPI, SQLAlchemy 2.0 (Asyncio), SQLite (`aiosqlite`), PostgreSQL (`asyncpg`), Alembic, Starlette-Admin
+- **Frontend**: React 18, Vite, Tailwind CSS (Dark Mode bilan), Lucide Icons, Fetch API Client (JWT interceptor bilan)
+- **Runner**: Gunicorn (`gunicorn_conf.py`) + `uvicorn.workers.UvicornWorker`
+- **Deployment**: Multi-stage Dockerfile + `render.yaml` (Render.com ga 1-click deploy)
+- **Seeder**: `db/seed.py` (Server ishga tushganda avtomatik admin, xodim va 8 ta realistik leadlarni kiritadi)
 
 ---
 
-### 3. Biznes mantiq: Kimlar lead yaratishi mumkin?
+## 2. Standart Foydalanuvchilar va Mock Datalar
 
-- Hozirgi kodda `create_lead` va `update_lead` faqat admin uchun cheklanmoqda (`PermissionChecker`).
-- CRM tizimlarida odatda **oddiy xodimlar/menejerlar ham** yangi lead yarata olishi va uning statusini o'zgartirishi
-  kerak bo'ladi. Faqatgina o'chirish (`DELETE`) yoki tizim sozlamalari adminga cheklanadi. Buni biznes talablaringizga
-  qarab aniqlashtirib olish tavsiya etiladi.
+Ilova ishga tushishi bilan [db/seed.py](file:///home/dev/PycharmProjects/MiniCRM/db/seed.py) avtomatik ishlaydi (idempotent, ma'lumotlar takrorlanmaydi):
 
----
+| Foydalanuvchi | Email / Login | Parol | Roli | Imkoniyatlari |
+| :--- | :--- | :--- | :--- | :--- |
+| **Admin** | `admin@crm.com` | `admin123` | Bosh Administrator | Lead yaratish, ko'rish, tahrirlash, status o'zgartirish |
+| **Menejer** | `menejer@crm.com` | `menejer123` | Oddiy xodim / Menejer | Leadlar ro'yxatini ko'rish, qidirish, filtrlash, detail ko'rish |
+| **Starlette Admin** | `admin` | `admin123` | Admin Panel (`/admin`) | DB jadvallarini to'g'ridan-to'g'ri boshqarish |
 
-### 4. CRUD dagi to'liqlik: `DELETE` endpointi
-
-- Vazifada to'liq CRUD so'ralgan. Hozirda:
-    - Create: `POST /controller/create/lead/`
-    - Read: `GET /controller/lead/list/` va `GET /controller/get/lead/{pk}/`
-    - Update: `PATCH /controller/update/lead/{pk}/`
-    - Delete: `DELETE /controller/delete/lead/{pk}/` hali yozilmagan.
+### Mock Leadlar (8 ta):
+- Har xil statuslar: `new`, `contacted`, `qualified`, `won`, `lost`.
+- Har xil manbalar: `Instagram`, `Telegram`, `Veb-sayt`, `Tavsiya`, `Ko'cha reklamasi`, `Facebook`.
+- Har bir lead uchun o'zgarishlar tarixi (`History` audit loglari).
 
 ---
 
-### 5. `apps/test.py` dagi testlar
+## 3. Render.com ga Deploy qilish (Professional Docker Usuli)
 
-- `pytest` ishga tushirilganda 0 ta test topilmoqda, chunki `test_` prefiksi bilan boshlanuvchi haqiqiy test
-  funksiyalari mavjud emas.
-- `apps/test.py` dagi `login_user` funksiyasida `/login/token` endpointi chaqirilgan, aslida u `/auth/login`.
+Loyiha to'liq **Multi-stage Dockerfile** asosida tayyorlandi:
+1. **1-bosqich (`node:20-alpine`)**: React frontend kodlarini o'rnatadi va `npm run build` orqali `/app/frontend/dist` papkasini tayyorlaydi.
+2. **2-bosqich (`python:3.12-slim`)**: `uv` paket boshqaruvchisi orqali Python kutubxonalarini o'rnatadi, backend va 1-bosqichdagi frontend dist fayllarini birlashtiradi.
+3. **Ishga tushirish**: `gunicorn -c gunicorn_conf.py main:app`.
+
+### Render.com da sozlash:
+1. GitHub reponi Render.com ga ulang.
+2. Yangi **Web Service** oching va **Runtime: Docker** ni tanlang (yoki to'g'ridan-to'g'ri `render.yaml` Blueprint orqali ulang).
+3. **Environment Variables**:
+   - `SECRET_KEY`: ixtiyoriy 64-belgili satr (Render avtomatik yaratishi mumkin).
+   - `ADMIN_PANEL_SECRET`: ixtiyoriy satr.
+   - `DB_URL`: `sqlite+aiosqlite:///./test.db` (yoki Renderning bepul PostgreSQL manzilini: `postgresql+asyncpg://...` qilib qo'yishingiz mumkin).
 
 ---
 
-## 4. UI integratsiyasiga tayyorgarlik (Frontend Ready Check)
+## 4. Buyruqlar (Makefile)
 
-Backend API deyarli to'liq tayyor:
+```bash
+# 1. Gunicorn production serverni ishga tushirish:
+make run
 
-1. `GET /controller/lead/list/?search=...&status=...&limit=...&offset=...` — UI dagi asosiy jadval (table), qidiruv
-   paneli va status filtrlarini chizish uchun qulay.
-2. `GET /controller/actions/history/{pk}` — har bir lead uchun alohida modal/drawer ochib, uning o'zgarishlar tarixini
-   chiroyli ko'rsatish mumkin.
-3. `PATCH /controller/update/lead/{pk}/` — lead statusini o'zgartirish (masalan, Kanban doskasida drag-and-drop yoki
-   dropdown orqali) va tahrirlash uchun qulay.
+# 2. Lokal dasturlash rejimida (Uvicorn reload bilan):
+make dev
+
+# 3. Barcha avtomatlashtirilgan testlarni ishga tushirish (16 ta test):
+make test
+
+# 4. Frontend kodlarini qayta yig'ish (Build):
+make build-frontend
+
+# 5. Starlette Admin panelni ishga tushirish:
+make admin
+```

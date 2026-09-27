@@ -1,3 +1,4 @@
+import os
 import time
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -5,12 +6,15 @@ from typing import AsyncGenerator
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from starlette.middleware import Middleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware import Middleware
 
 from admin.app import admin
 from apps import main_router, exception_handler
 from db import engine
 from db.config import Base
+from db.seed import seed_database
 
 
 # ==========================================
@@ -20,6 +24,7 @@ from db.config import Base
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    await seed_database()
     yield
     await engine.dispose()
 
@@ -59,9 +64,27 @@ async def add_process_time_header(request: Request, call_next):
 app.include_router(main_router)
 admin.mount_to(app)
 
+# ==========================================
+# 4. FRONTEND STATIC FILES & SPA SERVING
+# ==========================================
+FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend", "dist")
+FRONTEND_ASSETS = os.path.join(FRONTEND_DIST, "assets")
+
+if os.path.exists(FRONTEND_ASSETS):
+    app.mount("/assets", StaticFiles(directory=FRONTEND_ASSETS), name="assets")
+
+
+@app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+@app.api_route("/app", methods=["GET", "HEAD"], include_in_schema=False)
+async def serve_frontend():
+    index_file = os.path.join(FRONTEND_DIST, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return {"status": "ok", "message": "MiniCRM Backend API is active. Build frontend via 'cd frontend && npm run build'"}
+
 
 # ==========================================
-# 4. SWAGGER OPENAPI SECURITY OVERRIDE
+# 5. SWAGGER OPENAPI SECURITY OVERRIDE
 # ==========================================
 def custom_openapi():
     if app.openapi_schema:
@@ -81,7 +104,18 @@ def custom_openapi():
             "bearerFormat": "JWT",
         }
     }
-    public_paths = ["/login", "/user/register", "/docs", "/redoc", "/openapi.json"]
+    public_paths = [
+        "/",
+        "/app",
+        "/login",
+        "/user/register",
+        "/auth/login",
+        "/auth/user/register",
+        "/auth/refresh",
+        "/docs",
+        "/redoc",
+        "/openapi.json"
+    ]
 
     for path, path_item in openapi_schema["paths"].items():
         if path not in public_paths:

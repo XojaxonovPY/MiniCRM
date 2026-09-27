@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Body
 from sqlalchemy import select
 from starlette.responses import JSONResponse
 
-from apps.depends import SessionDep
+from apps.depends import SessionDep, UserSession
 from db.models import User
 from schemas import RegisterSchema, TokenResponseSchema, LoginSchema, UserResponseSchema
 from services.token import (
@@ -75,3 +75,8 @@ async def refresh_token(refresh_token_: BodyStr):
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
     })
+
+
+@router.get("/users/me", response_model=UserResponseSchema)
+async def read_users_me(current_user: UserSession):
+    return current_user

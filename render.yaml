@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: minicrm
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PANEL_SECRET
+        generateValue: true
+      - key: DB_URL
+        value: sqlite+aiosqlite:///./test.db
