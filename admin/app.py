@@ -7,16 +7,19 @@ from starlette.requests import Request
 from starlette_admin.contrib.sqla import Admin, ModelView
 
 from admin.provider import UsernameAndPasswordProvider
+from core.settings import Settings
 from db import engine
-from db.models import User, Admin as AdminModel
+from db.models import Admin as AdminModel
 
-admin = Admin(engine,
-              title='Mini CRM Admin',
-              base_url='/admin/',
-              auth_provider=UsernameAndPasswordProvider(),
-              secret_key="sdgfhjhhsfdghn",
-              middlewares=[Middleware(SessionMiddleware, secret_key="sdgfhjhhsfdghn")]
-              )
+secret_key = Settings.ADMIN_PANEL_SECRET
+admin = Admin(
+    engine,
+    title='Mini CRM Admin',
+    base_url='/admin/',
+    auth_provider=UsernameAndPasswordProvider(),
+    secret_key=secret_key,
+    middlewares=[Middleware(SessionMiddleware, secret_key=secret_key)]
+)
 
 
 class AdminModelView(ModelView):

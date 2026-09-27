@@ -8,10 +8,11 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.settings import Settings
 from db.models import User
 from db.sessions import get_session
 
-SECRET_KEY = "629c7d363ffa1562c4fbe09742653d9ccf149621cb662bf69746a6e6476eff63"
+SECRET_KEY = Settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 5
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -85,7 +86,7 @@ async def get_current_user(session: AsyncSession = Depends(get_session), token: 
     """Foydalanuvchini token turiga qarab dinamik aniqlash funksiyasi"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Muddati o'tgan yoki noto'g'ri token",
+        detail="Token expired or Incorrect credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 

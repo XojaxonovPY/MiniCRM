@@ -8,7 +8,7 @@ from apps.depends import SessionDep, UserSession
 from apps.permissions import PermissionChecker
 from db.models import Lead, History
 from schemas import LeadResponseSchema, LeadsResponseSchema, MessageResponseSchema, LeadRequestSchema, \
-    LeadPatchRequestSchema
+    LeadPatchRequestSchema, HistoryResponseSchema
 from schemas.filter import LeadFilter
 from schemas.pagination import Pagination
 
@@ -40,7 +40,10 @@ async def get_one_lead(pk: int, session: SessionDep, user: UserSession) -> Lead 
     return lead
 
 
-@router.post("/create/lead/", response_model=MessageResponseSchema, dependencies=[Depends(PermissionChecker)])
+@router.post(
+    "/create/lead/", response_model=MessageResponseSchema, status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(PermissionChecker())]
+)
 async def create_lead(session: SessionDep, user: UserSession, payload: LeadRequestSchema):
     lead = await Lead.create(session, **payload.model_dump(exclude_unset=True), creator_id=user.id)
     await History.create(session, user_id=user.id, lead_id=lead.id, detail="Leader is created")
@@ -48,12 +51,19 @@ async def create_lead(session: SessionDep, user: UserSession, payload: LeadReque
     return MessageResponseSchema(status="success", message="Lead is created successfully")
 
 
-@router.patch("/update/lead/{pk}/", response_model=MessageResponseSchema, dependencies=[Depends(PermissionChecker)])
+@router.patch("/update/lead/{pk}/", response_model=MessageResponseSchema, dependencies=[Depends(PermissionChecker())])
 async def update_lead(pk: int, session: SessionDep, user: UserSession, payload: LeadPatchRequestSchema):
     lead_data: dict[str, Any] = payload.model_dump(exclude_unset=True)
     lead = await Lead.update(session, filter_={"id": pk}, **lead_data)
+    updated_fields = ", ".join(lead_data.keys())
     if not lead:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
-    await History.create(session, user_id=user.id, lead_id=lead.id, detail=f"Lead {lead_data.keys()} are updated")
+    await History.create(session, user_id=user.id, lead_id=lead.id, detail=f"Lead {updated_fields} are updated")
     await session.commit()
     return MessageResponseSchema(status="success", message="Lead is updated successfully")
+
+
+@router.get("/actions/history/{pk}", response_model=list[HistoryResponseSchema])
+async def get_history(session: SessionDep, user: UserSession, pk: int):
+    history = await History.get_filter(session, History.lead_id == pk)
+    return history
