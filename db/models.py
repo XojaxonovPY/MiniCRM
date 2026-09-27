@@ -57,7 +57,7 @@ class History(Model):
     __tablename__ = "histories"
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     lead_id: Mapped[int] = mapped_column(ForeignKey("leads.id", ondelete="SET NULL"), nullable=True, index=True)
-    detail: Mapped[str] = mapped_column(String(length=100), nullable=True, unique=True, index=True)
+    detail: Mapped[str] = mapped_column(String(length=100))
     user: Mapped["User"] = relationship("User", back_populates="histories", lazy="joined")
     lead: Mapped["Lead"] = relationship("Lead", back_populates="histories", lazy="joined")
 
