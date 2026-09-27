@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Type, TypeVar, Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import DateTime, Select
 from sqlalchemy import select, update, delete, insert, text
@@ -10,6 +11,13 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
 from db.exceptions import DatabaseException, logger
 
 T = TypeVar("T", bound="Model")
+
+UZB_TZ = ZoneInfo("Asia/Tashkent")
+
+
+def get_current_uzb_time() -> datetime:
+    # microsecondsiz yoki microseconds bilan toza lokal vaqt
+    return datetime.now(UZB_TZ)
 
 
 class Base(DeclarativeBase):
@@ -111,28 +119,26 @@ class Manager:
     @staticmethod
     def _handle_db_error(e: Exception):
         if isinstance(e, IntegrityError):
-            sqlstate = getattr(e.orig, "sqlstate", None)
+            error_msg = str(e.orig).lower() if getattr(e, "orig", None) else ""
 
-            if sqlstate == "23505":
+            if "unique constraint" in error_msg or "duplicate" in error_msg:
+                logger.error(e)
                 raise DatabaseException(
-                    message="Bu foydalanuvchi nomi (username) allaqachon band. Iltimos, boshqa nom kiriting.",
+                    message="Bu ma'lumot (username, email yoki telefon) allaqachon band. Iltimos, boshqa qiymat kiriting.",
                     code=409,
-                    original_error=e
                 )
-
-            elif sqlstate == "23503":
+            elif "foreign key" in error_msg:
+                logger.error(e)
                 raise DatabaseException(
                     message="Bog'langan ma'lumot topilmadi yoki xato ID yuborildi.",
                     code=409,
-                    original_error=e
                 )
 
+            logger.error(e)
             raise DatabaseException(
                 message="Ma'lumotlar yaxlitligi buzildi (Tizim xatosi).",
                 code=409,
-                original_error=e
             )
-
         if isinstance(e, DataError):
             logger.warning(f"Database Data Warning: {e}")
             raise DatabaseException(f"Ma'lumot formatida xato: {str(e.orig)}", 400, e)
@@ -155,4 +161,4 @@ class Model(Base, Manager):
         return cls.__name__.lower() + "s"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text('CURRENT_TIMESTAMP'))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=get_current_uzb_time)

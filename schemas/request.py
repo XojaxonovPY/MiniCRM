@@ -1,20 +1,29 @@
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from db.enum import UserStatus
+from schemas.base import BaseSchema
 
 
-class LoginSchema(BaseModel):
-    username: str
+class BaseAuthSchema(BaseSchema):
     password: str
 
 
-class RegisterSchema(BaseModel):
-    first_name: Optional[str] = None
-    username: str
-    password: str = Field(max_length=10, min_length=3,default='1234')
+class LoginSchema(BaseAuthSchema):
+    pass
 
 
-class UserSchema(BaseModel):
-    first_name: Optional[str] = None
-    password: Optional[str] = None
-    username: Optional[str] = None
+class RegisterSchema(BaseAuthSchema):
+    full_name: str
+
+
+class LeadRequestSchema(BaseSchema):
+    name: str
+    note: str
+    source: str
+
+
+class LeadPatchRequestSchema(BaseSchema):
+    name: Optional[str] = None
+    note: Optional[str] = None
+    status: Optional[UserStatus] = None
+    source: Optional[str] = None

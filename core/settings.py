@@ -9,5 +9,5 @@ load_dotenv(Env_path)
 
 class Settings:
     DB_URL = getenv('DB_URL')
-    ADMIN_USERNAME = getenv('ADMIN_USERNAME')
-    ADMIN_PASSWORD = getenv('ADMIN_PASSWORD')
+    SECRET_KEY = getenv('SECRET_KEY')
+    ADMIN_PANEL_SECRET = getenv('ADMIN_PANEL_SECRET')

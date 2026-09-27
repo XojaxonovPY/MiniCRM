@@ -1,6 +1,7 @@
 from typing import Annotated, TypeAlias
 
 from fastapi import APIRouter, HTTPException, status, Body
+from sqlalchemy import select
 from starlette.responses import JSONResponse
 
 from apps.depends import SessionDep, UserSession
@@ -29,16 +30,24 @@ async def user_create(session: SessionDep, user: RegisterSchema):
     return new_user
 
 
-# ==========================================
-# 2. TIZIMGA KIRISH (LOGIN)
-# ==========================================
 @router.post("/login", response_model=TokenResponseSchema)
 async def login(session: SessionDep, data: LoginSchema) -> JSONResponse:
-    user = await User.get(session, username=data.username)
+    stmt = select(User)
+    if data.phone_number and data.email:
+        stmt = stmt.where(User.phone_number == data.phone_number, User.email == data.email)
+    elif data.email:
+        stmt = stmt.where(User.email == data.email)
+    elif data.phone_number:
+        stmt = stmt.where(User.phone_number == data.phone_number)
+    else:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You have to enter phone number or email")
+
+    result = await User.get_query(session, stmt)
+    user = result.scalar_one_or_none()
     if not user or not await verify_password(data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username yoki parol noto'g'ri"
+            detail="Email,Phone number and Password do not match"
         )
 
     access_token = create_access_token(subject=str(user.id))
@@ -55,10 +64,7 @@ async def refresh_token(refresh_token_: BodyStr):
     payload = verify_token(refresh_token_)
 
     if not payload or payload.get("type") != "refresh":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Yaroqsiz yoki muddati o'tgan refresh token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
 
     token_subject = payload["sub"]
     new_access_token = create_access_token(subject=token_subject)
@@ -71,9 +77,6 @@ async def refresh_token(refresh_token_: BodyStr):
     })
 
 
-# ==========================================
-# 4. JORIY FOYDALANUVCHI (ME)
-# ==========================================
 @router.get("/users/me", response_model=UserResponseSchema)
 async def read_users_me(current_user: UserSession):
     return current_user

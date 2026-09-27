@@ -1,7 +1,7 @@
 PORT = 8005
 HOST = localhost
 
-.PHONY: mig upg down create admin
+.PHONY: mig upg down create admin run dev build-frontend test
 
 mig:
 	alembic revision --autogenerate -m "Create a baseline migrations"
@@ -18,6 +18,18 @@ down:
 create:
 	alembic init migrations
 
-# Admin panelni ishga tushirish
-admin:
-	uvicorn admin.app:app --host $(HOST) --port $(PORT)
+# Gunicorn serverni ishga tushirish (Uvicorn workers bilan)
+run:
+	gunicorn -c gunicorn_conf.py main:app
+
+# Lokal dasturlash uchun reload rejimida ishga tushirish
+dev:
+	uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# Frontendni yig'ish (Build)
+build-frontend:
+	cd frontend && npm run build
+
+# Testlarni ishga tushirish (Pytest)
+test:
+	pytest -v
