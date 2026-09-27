@@ -25,9 +25,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Tezkor paket boshqaruvchisi UV-ni o'rnatish
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Bog'liqliklarni o'rnatish
+# Bog'liqliklarni o'rnatish (root projectsiz faqat kutubxonalar)
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-cache
+RUN uv sync --frozen --no-install-project --no-cache
 
 # Virtual environment yo'lini PATH ga qo'shish
 ENV PATH="/app/.venv/bin:$PATH" \
