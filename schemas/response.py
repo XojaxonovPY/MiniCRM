@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from db.enum import UserStatus
 from schemas import LeadBaseSchema
@@ -13,17 +13,16 @@ class TokenResponseSchema(BaseModel):
 
 
 class UserResponseSchema(BaseModel):
-    id: Optional[int]
-    full_name: Optional[str]
-    email: Optional[str]
-    phone_number: Optional[str]
+    id: int
+    full_name: str
+    email: EmailStr
+    phone_number: str
+    is_admin: bool
 
 
 class LeadResponseSchema(LeadBaseSchema):
     id: Optional[int]
     name: Optional[str]
-    email: Optional[str]
-    phone_number: Optional[str]
     status: UserStatus
     note: Optional[str]
     source: Optional[str]
