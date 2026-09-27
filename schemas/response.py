@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 from db.enum import UserStatus
+from schemas import LeadBaseSchema
 
 
 class TokenResponseSchema(BaseModel):
@@ -18,9 +19,9 @@ class UserResponseSchema(BaseModel):
     phone_number: Optional[str]
 
 
-class LeadResponseSchema(BaseModel):
+class LeadResponseSchema(LeadBaseSchema):
     id: Optional[int]
-    full_name: Optional[str]
+    name: Optional[str]
     email: Optional[str]
     phone_number: Optional[str]
     status: UserStatus
@@ -34,3 +35,8 @@ class LeadsResponseSchema(BaseModel):
     data: list[LeadResponseSchema]
     limit: int
     offset: int
+
+
+class MessageResponseSchema(BaseModel):
+    status: str
+    message: str

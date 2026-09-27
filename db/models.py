@@ -32,13 +32,15 @@ class User(Model):
     email: Mapped[str] = mapped_column(String(length=100), nullable=True, unique=True, index=True)
     password: Mapped[str] = mapped_column(String(length=200))
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
-    leads: Mapped[list["Lead"]] = relationship("Lead", back_populates="created", lazy="joined")
+    leads: Mapped[list["Lead"]] = relationship("Lead", back_populates="creator", lazy="selectin")
     histories: Mapped[list["History"]] = relationship("History", back_populates="user", lazy="selectin")
 
 
 class Lead(Model):
     name: Mapped[str] = mapped_column(String(length=100))
     source: Mapped[str] = mapped_column(String(length=255))
+    phone_number: Mapped[str] = mapped_column(String(length=20), nullable=True, unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(length=100), nullable=True, unique=True, index=True)
     note: Mapped[str] = mapped_column(String(length=200))
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     status: Mapped[UserStatus] = mapped_column(

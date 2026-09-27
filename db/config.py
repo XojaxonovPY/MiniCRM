@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Type, TypeVar, Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import DateTime, Select
 from sqlalchemy import select, update, delete, insert, text
@@ -10,6 +11,13 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, declared_attr
 from db.exceptions import DatabaseException, logger
 
 T = TypeVar("T", bound="Model")
+
+UZB_TZ = ZoneInfo("Asia/Tashkent")
+
+
+def get_current_uzb_time() -> datetime:
+    # microsecondsiz yoki microseconds bilan toza lokal vaqt
+    return datetime.now(UZB_TZ)
 
 
 class Base(DeclarativeBase):
@@ -153,4 +161,4 @@ class Model(Base, Manager):
         return cls.__name__.lower() + "s"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text('CURRENT_TIMESTAMP'))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=get_current_uzb_time)
