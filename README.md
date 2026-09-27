@@ -295,7 +295,7 @@ Loyihada **Multi-stage Dockerfile** va **`render.yaml`** mavjudligi sababli uni 
      - `ADMIN_PANEL_SECRET`: ixtiyoriy maxfiy satr
      - `DB_URL`: `sqlite+aiosqlite:///./test.db` (yoki Renderning bepul PostgreSQL havolasi: `postgresql+asyncpg://...`)
 5. **Create Web Service** tugmasini bosing — Render avtomatik ravishda React frontendni yig'adi, Python backendni sozlaydi va Gunicorn orqali ishga tushiradi!
-
+6. **Render Url** -> https://minicrm-pypy.onrender.com/
 ---
 
 ## 👨‍💻 Muallif
